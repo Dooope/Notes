@@ -132,3 +132,9 @@ public class TestDemo {
 [![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
 **很明显，调用无参构造方法实例化对象要比调用有参构造的更加简单、方便，所以在日后的所有开发之中，凡是有简单****Java****类出现的地方，都一定要提供无参构造。**
+
+2、SpringBean的生命周期
+
+3、什么是springbean？与bean的区别？
+
+4、
