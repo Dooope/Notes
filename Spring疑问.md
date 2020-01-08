@@ -137,4 +137,9 @@ public class TestDemo {
 
 3、什么是springbean？与bean的区别？
 
-4、
+4、Spring引入外部资源文件的方式？
+
+5、什么场景使用同步关键字？
+
+6、Spring中AOP的实现方式？
+
