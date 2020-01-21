@@ -103,3 +103,13 @@ forward能不能被执行取决于response有没有被提交，如果response被
 重定向可以跨域访问，而转发是在web服务器内部进行的，不能跨域访问。
 同源策略：指的是浏览器对不同源的脚本或者文本的访问方式进行的限制。两个页面具有相同的协议，主机（也常说域名），端口，三个要素缺一不可。
 页面中的链接，重定向以及表单提交是不会受到同源策略限制的。
+
+#### **4、JSON对象和JSON字符串**
+
+在SpringMVC环境中，@RequestBody接收的是一个Json对象的字符串，而不是一个Json对象。然而在ajax请求往往传的都是Json对象，用 JSON.stringify(data)的方式就能将对象变成字符串。
+
+同时ajax请求的时候也要指定dataType: "json",contentType:"application/json" 这样就可以轻易的将一个对象或者List传到Java端！
+
+![image-20200121164940613](SpringMVC笔记.assets/image-20200121164940613.png)
+
+![image-20200121165028524](SpringMVC笔记.assets/image-20200121165028524.png)
