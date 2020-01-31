@@ -113,3 +113,290 @@ forward能不能被执行取决于response有没有被提交，如果response被
 ![image-20200121164940613](SpringMVC笔记.assets/image-20200121164940613.png)
 
 ![image-20200121165028524](SpringMVC笔记.assets/image-20200121165028524.png)
+
+#### 5、maven-compiler-plugin 插件详解
+
+maven是个项目管理工具，如果我们不告诉它我们的代码要使用什么样的jdk版本编译的话，它就会用maven-compiler-plugin默认的jdk版本来进行处理，这样就容易出现版本不匹配，以至于可能导致编译不通过的问题。
+
+maven的默认编译使用的jdk版本貌似很低，使用maven-compiler-plugin插件可以指定项目源码的jdk版本，编译后的jdk版本，以及编码。
+
+<plugin>                                                                                                                                     
+    <!-- 指定maven编译的jdk版本,如果不指定,maven3默认用jdk 1.5 maven2默认用jdk1.3 -->                                                                         
+    <groupId>org.apache.maven.plugins</groupId>                                                                                               
+    <artifactId>maven-compiler-plugin</artifactId>                                                                                            
+    <version>3.1</version>                                                                                                                    
+    <configuration>                                                                                                                           
+        <!-- 一般而言，target与source是保持一致的，但是，有时候为了让程序能在其他版本的jdk中运行(对于低版本目标jdk，源代码中不能使用低版本jdk中不支持的语法)，会存在target不同于source的情况 -->                    
+        <source>1.8</source> <!-- 源代码使用的JDK版本 -->                                                                                             
+        <target>1.8</target> <!-- 需要生成的目标class文件的编译版本 -->                                                                                     
+        <encoding>UTF-8</encoding><!-- 字符集编码 -->
+        <skipTests>true</skipTests><!-- 跳过测试 -->                                                                             
+        <verbose>true</verbose>
+        <showWarnings>true</showWarnings>                                                                                                               
+        <fork>true</fork><!-- 要使compilerVersion标签生效，还需要将fork设为true，用于明确表示编译版本配置的可用 -->                                                        
+        <executable><!-- path-to-javac --></executable><!-- 使用指定的javac命令，例如：<executable>${JAVA_1_4_HOME}/bin/javac</executable> -->           
+        <compilerVersion>1.3</compilerVersion><!-- 指定插件将使用的编译器的版本 -->                                                                         
+        <meminitial>128m</meminitial><!-- 编译器使用的初始内存 -->                                                                                      
+        <maxmem>512m</maxmem><!-- 编译器使用的最大内存 -->                                                                                              
+        <compilerArgument>-verbose -bootclasspath ${java.home}\lib\rt.jar</compilerArgument><!-- 这个选项用来传递编译器自身不包含但是却支持的参数选项 -->               
+    </configuration>                                                                                                                          
+</plugin>    
+
+
+
+#### 6、自定义类型转换器
+
+自定义类型转换器
+
+package com.springmvc.utils;
+
+import org.springframework.core.convert.converter.Converter;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+/**
+ * 自定义类型转换器实现改接口，Converter<S,T>
+
+ * S：source，转换前的数据类型
+
+ * T：target，转换后的数据类型
+     */
+    public class DateConverter implements Converter<String,Date> {
+    @Override
+    public Date convert(String source) {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        try {
+            return simpleDateFormat.parse(source);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    }
+
+    注册自定义类型转换器
+
+<!-- 注册自定义类型转换类-->
+    <bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
+        <property name="converters">
+            <set>
+                <bean class="com.springmvc.utils.DateConverter"/>
+            </set>
+        </property>
+    </bean>         
+
+自动注册最合适的处理器映射器，处理器适配器（调用handler方法）
+
+<mvc:annotation-driven conversion-service="conversionService"/>        
+
+#### 7、SpringMVC中的异常处理
+
+Controller—>Service—>Dao层，异常统一向上抛出，可以自定义全局异常处理器统一处理异常
+
+异常类型：编译异常、运行时异常；运行时异常、预期异常（自定义异常）
+
+l 自定义异常
+
+```
+package com.springmvc.exception;
+
+public class MyException extends Exception {
+    private String message;
+
+    public MyException(String message) {
+        this.message = message;
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+}
+```
+
+l 自定义异常处理器
+
+```
+package com.springmvc.exception;
+
+import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.web.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public class MyExceptionResolver implements HandlerExceptionResolver {
+    @Override
+    public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+
+        String message = null;
+        if(ex instanceof MyException) {
+            // 自定义异常
+            message = ex.getMessage();
+        }else {
+            // 运行时异常
+            message = "系统出现未知异常，请联系管理员";
+        }
+
+        // 跳转到一个友好的提示页面
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.addObject("exception",message);
+        modelAndView.setViewName("exception");
+        return modelAndView;
+    }
+}
+<bean id="myExceptionResolver" class="com.springmvc.exception.ExceptionHandler"></bean>
+```
+
+#### 8、SpringMVC中拦截器的使用
+
+##### 认识拦截器
+
+l Servlet：处理Request请求和Response响应
+
+l 过滤器（Filter）：对Request请求起到过滤的作用，****作用在Servlet之前\****，如果配置为/*可以对所有的资源访问（servlet、js/css静态资源等）进行过滤处理
+
+l 监听器（Listener）：实现了javax.servlet.ServletContextListener 接口的服务器端组件，它随Web应用的启动而启动，只初始化一次，然后会一直运行监视，随Web应用的停止而销毁
+
+作用一：做一些初始化工作
+
+作用二：监听web中的特定事件，比如HttpSession,ServletRequest的创建和销毁；变量的创建、销毁和修改等。可以在某些动作前后增加处理，实现监控，比如统计在线人数，利用HttpSessionLisener等。
+
+l 拦截器（Interceptor）：是SpringMVC、Struts等表现层框架自己的，不会拦截jsp/html/css/image的访问等，只会拦截访问的控制器方法（Handler）。
+
+从配置的角度也能够总结发现：serlvet、filter、listener是配置在web.xml中的，而interceptor是配置在表现层框架自己的配置文件中的
+
+在Handler业务逻辑执行之前拦截一次
+
+在Handler逻辑执行完毕但未跳转页面之前拦截一次
+
+在跳转页面之后拦截一次
+
+[![1576485918159](https://github.com/lagouedu/Basic-document/raw/master/img-folder/SpringMVC/1576485918159.png)](https://github.com/lagouedu/Basic-document/blob/master/img-folder/SpringMVC/1576485918159.png)
+
+##### SpringMVC中自定义拦截器
+
+l 实现HandlerInterceptor接口
+
+```
+package com.springmvc.interceptor;
+
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+/**
+ * SpringMVC中自定义拦截器实现HandlerInterceptor接口
+ */
+public class MyInterceptor implements HandlerInterceptor {
+
+    /**
+     * 之前执行：Handler逻辑真正执行之前执行
+     * @param request
+     * @param response
+     * @param handler
+     * @return 代表是否放行，true放行，false中止
+     */
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        HandlerMethod handlerMethod = (HandlerMethod)handler;
+        System.out.println("===============>>>preHandle0:" + ((HandlerMethod) handler).getMethod().getName());
+        return true;
+    }
+
+    /**
+     * 之中执行：Handler逻辑真正执行完成但尚未返回页面
+     * @param request
+     * @param response
+     * @param handler
+     * @param modelAndView
+     */
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) {
+        //modelAndView.addObject("nowDate","123");
+        //modelAndView.setViewName("error");
+        System.out.println("===============>>>postHandle0");
+    }
+
+
+    /**
+     * 之后执行：返回页面之后执行
+     * @param request
+     * @param response
+     * @param handler
+     * @param ex
+     */
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        System.out.println("===============>>>afterCompletion0");
+    }
+}
+```
+
+l 配置拦截器
+
+```
+<mvc:interceptors>
+    <mvc:interceptor>
+        <mvc:mapping path="/**"/>
+        <bean class="com.springmvc.interceptor.MyHandlerInterceptor"/>
+    </mvc:interceptor>
+    <mvc:interceptor>
+        <mvc:mapping path="/**"/>
+        <bean class="com.springmvc.interceptor.MyHandlerInterceptor1"/>
+    </mvc:interceptor>
+    <mvc:interceptor>
+        <mvc:mapping path="/**"/>
+        <bean class="com.springmvc.interceptor.MyHandlerInterceptor2"/>
+    </mvc:interceptor>
+</mvc:interceptors>
+```
+
+l 拦截器链（Interceptor Chain）
+
+[![1576485938879](https://github.com/lagouedu/Basic-document/raw/master/img-folder/SpringMVC/1576485938879.png)](https://github.com/lagouedu/Basic-document/blob/master/img-folder/SpringMVC/1576485938879.png)
+
+拦截器链执行时，拦截器链正常流程测试
+
+preHandle按照拦截器配置顺序执行
+
+postHandle按照拦截器配置倒序执行
+
+afterCompletion按照拦截器配置倒序执行
+
+拦截器链中断流程测试
+
+拦截器链中有中断时，整个链中的拦截器的postHandle都不会执行
+
+
+
+#### 9、继承（extends）、实现（implements）
+
+Java 类只能继承一个类，可以实现多个接口
+
+Java接口可以继承多个接口
+
+#### 10、HTML <form> 标签的 enctype 属性
+
+##### 定义和用法
+
+enctype 属性规定在发送到服务器之前应该如何对表单数据进行编码。
+
+默认地，表单数据会编码为 "application/x-www-form-urlencoded"。就是说，在发送到服务器之前，所有字符都会进行编码（空格转换为 "+" 加号，特殊符号转换为 ASCII HEX 值）。
+
+语法
+<form enctype="value">
+application/x-www-form-urlencoded	在发送前编码所有字符（默认）
+multipart/form-data	不对字符编码。在使用包含文件上传控件的表单时，必须使用该值。
+text/plain	空格转换为 "+" 加号，但不对特殊字符编码。
+
+#### 11、路径
+
+（1）、绝对路径就是在路径开头**加“/”**，那路径的起始就是服务器IP地址；
+
+（2）、而相对路径就是开头**不加“/”，**而起始就是发起跳转的文件的所在路径；
