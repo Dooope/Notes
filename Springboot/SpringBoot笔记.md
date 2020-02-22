@@ -1,4 +1,5 @@
-MySQL版本的相关问题：com.mysql.cj.jdbc.Driver和com.mysql.jdbc.Driver    
+#### MySQL版本的相关问题：com.mysql.cj.jdbc.Driver和com.mysql.jdbc.Driver    
+
 1. 在使用mysql时，控制台日志报错如下：
 Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
 报错原因：
@@ -42,10 +43,34 @@ mysql.url=jdbc:mysql://127.0.0.1:3306/dbname?serverTimezone=UTC&useUnicode=true&
 
 
 
-Java模板引擎技术？
+#### 模板引擎技术？
 
-上下文？Web Context？
+​		模板引擎（这里特指用于Web开发的模板引擎）是为了使用户界面与业务数据（内容）分离而产生的，它可以生成特定格式的文档，用于网站的模板引擎就会生成一个标准的[HTML](https://baike.baidu.com/item/HTML/97049)文档。
 
-SPI？ 自动注册
+常用的有freemarker、velocity、jsp、Thymeleaf等
+
+#### 上下文？Web Context？
+
+工程的环境，配置信息
+
+#### SPI？ 
+
+SPI ，全称为 Service Provider Interface，是一种服务发现机制。它通过在ClassPath路径下的META-INF/services文件夹查找文件，自动加载文件里所定义的类。（自动注册）
+
+
 
 使⽤原⽣sql语句查询，需要将nativeQuery属性设置为true，默认为false（jpql）或者设置实体类上的属性@Entity(name = "表名")
+
+
+
+**spring-autoconfigure-metadata.properties / spring.factories ？**
+
+**spring-autoconfigure-metadata.properties** 中编写类自动配置的条件；
+
+**spring.factories**中编写需要自动配置的类。
+
+ 我们知道在Spring及SpringBoot里按条件创建Bean的核心是`Condition`接口与`Conditional`注解,其实在SpringBoot里还有一种AutoConfigure也可以来过滤配置，只不过使用这种技术，能够让SpringBoot更快速的启动。
+
+SpringBoot使用一个Annotation的处理器来收集一些自动装配的条件，那么这些条件可以在`META-INF/spring-autoconfigure-metadata.properties`进行配置。SpringBoot会将收集好的`@Configuration`进行一次过滤进而剔除不满足条件的配置类。
+
+ 根据官网说法，使用这种配置方式可以有效的降低SpringBoot的启动时间，因为通过这种过滤方式能减少`@Configuration`类的数量，从而降低初始化Bean时的耗时。
